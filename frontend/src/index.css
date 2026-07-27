@@ -1,0 +1,4 @@
+/* Global resets live in App.css; keep this file minimal for Vite defaults. */
+body {
+  margin: 0;
+}

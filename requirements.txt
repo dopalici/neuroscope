@@ -1,0 +1,19 @@
+# NeuroScope backend dependencies (Python 3.11 or 3.12 -- NOT 3.14).
+# Pinned to versions verified working on macOS / Apple Silicon, July 2026.
+
+# --- Numerics & signal processing ---
+numpy==2.5.1
+scipy==1.18.0
+
+# --- Muse acquisition (Lab Streaming Layer) ---
+# pylsl needs the native liblsl library too:  brew install labstreaminglayer/tap/lsl
+pylsl==1.18.2
+muselsl==2.5.1
+
+# --- Web / WebSocket server ---
+# FastAPI + uvicorn chosen over flask-socketio: native async WebSockets pair
+# cleanly with a single asyncio acquisition loop broadcasting to many clients,
+# with no extra Socket.IO protocol layer on top of the browser's WebSocket API.
+fastapi==0.139.2
+uvicorn[standard]==0.51.0
+websockets==16.1.1
