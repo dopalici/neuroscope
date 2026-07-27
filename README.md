@@ -159,6 +159,23 @@ Official Interaxon LibMuse / MuseLab packages are **not** part of this repo and 
 
 ---
 
+## Citing
+
+If you use NeuroScope in research, teaching, or derived work, please cite it.
+GitHub’s “Cite this repository” button uses [`CITATION.cff`](./CITATION.cff).
+
+```bibtex
+@software{Ozkan_NeuroScope_2026,
+  author  = {Ozkan, Enes},
+  title   = {{NeuroScope}: Real-time Muse 2 EEG Dashboard},
+  year    = {2026},
+  version = {0.1.0},
+  url     = {https://github.com/dopalici/neuroscope}
+}
+```
+
+---
+
 ## Disclaimer
 
 Educational and research-exploration tooling only. **Not a medical device.** Heuristic indices are for personal trends within a session, not diagnosis, screening, or between-subject comparison.

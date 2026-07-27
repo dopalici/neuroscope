@@ -1,0 +1,39 @@
+# This CITATION.cff file was generated for NeuroScope.
+# Cite this software if you use it in research, teaching, or derived work.
+# https://citation-file-format.github.io/
+
+cff-version: 1.2.0
+title: "NeuroScope: Real-time Muse 2 EEG Dashboard"
+message: >-
+  If you use NeuroScope, please cite it using the metadata below.
+type: software
+authors:
+  - family-names: Ozkan
+    given-names: Enes
+    email: ozkanenesibrahim@gmail.com
+    alias: dopalici
+repository-code: "https://github.com/dopalici/neuroscope"
+url: "https://github.com/dopalici/neuroscope"
+abstract: >-
+  NeuroScope is a real-time consumer EEG dashboard for the Interaxon Muse 2
+  headband. It acquires four-channel EEG (TP9, AF7, AF8, TP10 at 256 Hz),
+  optional PPG, and IMU via Lab Streaming Layer (muselsl / pylsl), then runs
+  bandpass filtering, Welch band-power estimation (delta–gamma), contact-quality
+  checks, blink/jaw artifact detection, and non-clinical cognitive-state
+  heuristics (beta/alpha focus ratio, relative-alpha calm, frontal alpha
+  asymmetry). A React frontend provides live visualization and a simple
+  alpha-driven neurofeedback demo. Simulation mode supports development without
+  hardware. Educational and exploration tooling only — not a medical device.
+keywords:
+  - EEG
+  - Muse 2
+  - Lab Streaming Layer
+  - LSL
+  - signal processing
+  - Welch periodogram
+  - band power
+  - neurofeedback
+  - consumer neuroscience
+  - real-time visualization
+version: 0.1.0
+date-released: "2026-07-27"
