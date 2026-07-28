@@ -31,7 +31,12 @@ function prepare(canvas: HTMLCanvasElement, height: number) {
   return { ctx, width, height }
 }
 
-/** Redraws on data change and on container resize, never on a timer. */
+/**
+ * Redraws on data change and on container resize, never on a timer — and only
+ * while the canvas is near the viewport. Six sections of charts all redrawing at
+ * 10 Hz is most of the cost of a page like this, and five of them are usually
+ * scrolled out of sight.
+ */
 function useCanvasDraw(
   draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void,
   height: number,
@@ -39,22 +44,43 @@ function useCanvasDraw(
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawRef = useRef(draw)
+  const visibleRef = useRef(true)
+  const staleRef = useRef(false)
   drawRef.current = draw
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+
     const render = () => {
+      if (!visibleRef.current) {
+        staleRef.current = true
+        return
+      }
+      staleRef.current = false
       const surface = prepare(canvas, height)
       if (surface) drawRef.current(surface.ctx, surface.width, surface.height)
     }
-    render()
+
+    const visibility = new IntersectionObserver(
+      ([entry]) => {
+        visibleRef.current = entry.isIntersecting
+        if (entry.isIntersecting && staleRef.current) render()
+      },
+      // A screen of slack, so scrolling never reveals an unpainted canvas.
+      { rootMargin: '100% 0px' },
+    )
+    visibility.observe(canvas)
 
     const parent = canvas.parentElement
-    if (!parent) return
-    const observer = new ResizeObserver(render)
-    observer.observe(parent)
-    return () => observer.disconnect()
+    const resize = new ResizeObserver(render)
+    if (parent) resize.observe(parent)
+
+    render()
+    return () => {
+      visibility.disconnect()
+      resize.disconnect()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [height, ...deps])
 

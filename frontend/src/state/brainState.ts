@@ -122,7 +122,7 @@ function signalState(frame: FrameMessage): BrainState {
  * "delta" forever. Each band is compared against its share in a typical resting
  * spectrum instead, so a genuine alpha rise actually surfaces as a state.
  */
-const BAND_REFERENCE: Record<BandName, number> = {
+export const BAND_REFERENCE: Record<BandName, number> = {
   delta: 0.42,
   theta: 0.22,
   alpha: 0.16,

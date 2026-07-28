@@ -91,6 +91,13 @@ moves.
 | Heart | PPG rate alongside head motion | Listening · Settled · Steady · Stirring · Racing |
 | Feedback | the calm index driving the bloom | Quiet · Easing · Opening · Blooming |
 
+Clicking the word opens a panel on the right — the page gives up that strip rather
+than being covered — holding the state as it read *at the moment of the click*. It
+shows the measure and its formula, the live numbers behind it, what is physically
+happening to produce that ratio (thalamocortical alpha gating, alpha blocking,
+ocular dipoles, jaw EMG, vagal modulation of the sinoatrial node), and what the
+reading cannot tell you.
+
 The words are **interpretive readings of the numbers already on screen** — a
 different expression of the same values, never a substitute for them and never a
 diagnosis. Weak or absent signal resolves to a genuinely neutral state rather than
