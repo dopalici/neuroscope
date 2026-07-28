@@ -29,7 +29,7 @@ export function FocusRelaxSection({ frame, focusHistory, calmHistory }: Props) {
                   style={{ width: `${clamp01(focus / 3) * 100}%` }}
                 />
               </div>
-              <Sparkline data={focusHistory} color="#e07a45" height={48} />
+              <Sparkline data={focusHistory} hueOffset={-14} height={48} />
               <p className="meter-hint">β / α · higher ≈ more alert engagement</p>
             </div>
             <div className="meter">
@@ -43,13 +43,13 @@ export function FocusRelaxSection({ frame, focusHistory, calmHistory }: Props) {
                   style={{ width: `${clamp01(calm) * 100}%` }}
                 />
               </div>
-              <Sparkline data={calmHistory} color="#3db8a0" height={48} />
+              <Sparkline data={calmHistory} hueOffset={26} height={48} />
               <p className="meter-hint">Relative α · eyes-closed rest often rises</p>
             </div>
           </div>
           <div className="faa-row">
             <span>Frontal α asymmetry (FAA)</span>
-            <strong className="mono" style={{ color: faa >= 0 ? '#5b8def' : '#e07a45' }}>
+            <strong className="mono" style={{ color: faa >= 0 ? '#8a9260' : '#c2703f' }}>
               {faa >= 0 ? '+' : ''}
               {faa.toFixed(3)}
             </strong>

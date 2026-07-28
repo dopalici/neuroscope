@@ -74,6 +74,37 @@ Each panel includes a short explainer and a credibility note.
 
 ---
 
+## Visual language
+
+The interface is built as an instrument rather than a clinical readout. A neutral
+earth-tone palette (soil, moss, ochre, clay, rust) is driven directly by the signal:
+the background gradient and a single **state word** in the top right both express
+whatever the section you're reading is measuring, and they crossfade as the signal
+moves.
+
+| Section | Reads | Words |
+|---------|-------|-------|
+| Signal | contact quality across the four pads | Drifting · Settling · Seated · Clear |
+| Bands | which rhythm leads, vs a typical 1/f profile | Deep · Drift · Open · Sharp · Bright |
+| Focus | β/α engagement against relative-α rest | Adrift · Soft · Even · Engaged · Charged |
+| Body | blink and jaw EMG events | Still · Blink · Clench · Restless |
+| Heart | PPG rate alongside head motion | Listening · Settled · Steady · Stirring · Racing |
+| Feedback | the calm index driving the bloom | Quiet · Easing · Opening · Blooming |
+
+The words are **interpretive readings of the numbers already on screen** — a
+different expression of the same values, never a substitute for them and never a
+diagnosis. Weak or absent signal resolves to a genuinely neutral state rather than
+inventing one.
+
+Implementation notes: colour is interpolated in a single `requestAnimationFrame`
+loop that writes CSS custom properties to a few registered elements, so the 10 Hz
+data stream and scrolling never compete for React renders. Gradient layers are flat
+colours pulled through static masks — recolouring repaints a solid fill instead of
+re-rasterising a gradient — and the slow drift is transform-only. The active section
+is tracked with an `IntersectionObserver`, not a scroll listener.
+
+---
+
 ## Quick start (simulation — no Muse)
 
 Requires **Python 3.11 or 3.12** (not 3.14) and **Node.js 18+**.

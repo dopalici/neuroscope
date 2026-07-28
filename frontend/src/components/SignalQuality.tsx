@@ -1,6 +1,7 @@
+import { useMemo } from 'react'
 import { MultiTrace } from './Charts'
 import { InfoBox, Section } from './Section'
-import { CHANNEL_COLORS } from '../types'
+import { CHANNEL_HUE_OFFSETS } from '../types'
 import type { FrameMessage } from '../types'
 
 interface Props {
@@ -10,7 +11,10 @@ interface Props {
 }
 
 export function SignalQualitySection({ eegBuffers, frame, channels }: Props) {
-  const colors = channels.map((c) => CHANNEL_COLORS[c] ?? '#9ab')
+  const hueOffsets = useMemo(
+    () => channels.map((c) => CHANNEL_HUE_OFFSETS[c] ?? 0),
+    [channels],
+  )
   const quality = frame?.quality
 
   return (
@@ -31,7 +35,7 @@ export function SignalQualitySection({ eegBuffers, frame, channels }: Props) {
           </div>
           <MultiTrace
             series={eegBuffers}
-            colors={colors}
+            hueOffsets={hueOffsets}
             labels={channels}
             height={280}
           />

@@ -26,7 +26,7 @@ export function HeartMotionSection({ frame, hrHistory }: Props) {
                 {hr > 0 ? hr.toFixed(0) : '—'}
                 <span className="hm-unit">bpm</span>
               </div>
-              <Sparkline data={hrHistory} color="#c45c8a" height={44} />
+              <Sparkline data={hrHistory} hueOffset={-10} height={44} />
               <div className="hm-sub">
                 HRV (RMSSD) {hrv > 0 ? `${hrv.toFixed(0)} ms` : '—'} · {beats} peaks
               </div>

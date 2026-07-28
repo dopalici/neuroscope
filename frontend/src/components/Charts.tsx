@@ -1,165 +1,208 @@
 import { useEffect, useRef } from 'react'
+import { atmosphere } from '../state/atmosphere'
 
-interface Props {
-  series: number[][]
-  colors: string[]
-  labels?: string[]
-  height?: number
-  yRange?: number // ±uV half-range; auto if omitted
-  grid?: boolean
+/**
+ * Sizes a canvas to its parent and returns a ready 2D context.
+ *
+ * Assigning canvas.width/height reallocates the backing bitmap, so it only
+ * happens when the box actually changed — otherwise every 10 Hz frame would
+ * throw away and reallocate the buffer.
+ */
+function prepare(canvas: HTMLCanvasElement, height: number) {
+  const parent = canvas.parentElement
+  if (!parent) return null
+  const width = parent.clientWidth
+  if (width <= 0) return null
+
+  const dpr = window.devicePixelRatio || 1
+  const pixelW = Math.max(1, Math.floor(width * dpr))
+  const pixelH = Math.max(1, Math.floor(height * dpr))
+  if (canvas.width !== pixelW || canvas.height !== pixelH) {
+    canvas.width = pixelW
+    canvas.height = pixelH
+    canvas.style.width = `${width}px`
+    canvas.style.height = `${height}px`
+  }
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return null
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+  ctx.clearRect(0, 0, width, height)
+  return { ctx, width, height }
 }
 
-/** Scrolling multi-channel line chart drawn on canvas (fast enough for EEG). */
-export function MultiTrace({
-  series,
-  colors,
-  labels,
-  height = 220,
-  yRange,
-  grid = true,
-}: Props) {
+/** Redraws on data change and on container resize, never on a timer. */
+function useCanvasDraw(
+  draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void,
+  height: number,
+  deps: readonly unknown[],
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const drawRef = useRef(draw)
+  drawRef.current = draw
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
+    const render = () => {
+      const surface = prepare(canvas, height)
+      if (surface) drawRef.current(surface.ctx, surface.width, surface.height)
+    }
+    render()
+
     const parent = canvas.parentElement
     if (!parent) return
+    const observer = new ResizeObserver(render)
+    observer.observe(parent)
+    return () => observer.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [height, ...deps])
 
-    const dpr = window.devicePixelRatio || 1
-    const w = parent.clientWidth
-    const h = height
-    canvas.width = Math.max(1, Math.floor(w * dpr))
-    canvas.height = Math.max(1, Math.floor(h * dpr))
-    canvas.style.width = `${w}px`
-    canvas.style.height = `${h}px`
+  return canvasRef
+}
 
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, w, h)
+/** Live state hue with an offset, as an hsl() string. */
+function tint(hueOffset: number, satScale = 1, lightScale = 1, alpha = 1) {
+  const { h, s, l } = atmosphere.live
+  const hue = (((h + hueOffset) % 360) + 360) % 360
+  const sat = Math.min(82, s * satScale + 18)
+  const light = Math.min(86, l * lightScale + 20)
+  return alpha >= 1
+    ? `hsl(${hue.toFixed(0)} ${sat.toFixed(0)}% ${light.toFixed(0)}%)`
+    : `hsl(${hue.toFixed(0)} ${sat.toFixed(0)}% ${light.toFixed(0)}% / ${alpha})`
+}
 
-    // Background
-    ctx.fillStyle = 'rgba(8, 14, 22, 0.55)'
-    ctx.fillRect(0, 0, w, h)
+interface Props {
+  series: number[][]
+  hueOffsets: number[]
+  labels?: string[]
+  height?: number
+  yRange?: number
+}
 
-    const nCh = series.length
-    if (!nCh) return
-    const laneH = h / nCh
-    const maxLen = Math.max(...series.map((s) => s.length), 1)
+/** Scrolling multi-channel EEG traces, drawn as ink on warm ground. */
+export function MultiTrace({ series, hueOffsets, labels, height = 220, yRange }: Props) {
+  const canvasRef = useCanvasDraw(
+    (ctx, w, h) => {
+      const lanes = series.length
+      if (!lanes) return
+      const laneH = h / lanes
 
-    // Auto range from data if not provided
-    let amp = yRange ?? 0
-    if (!yRange) {
-      let peak = 1
-      for (const s of series) {
-        for (const v of s) peak = Math.max(peak, Math.abs(v))
+      let maxLen = 1
+      for (const s of series) if (s.length > maxLen) maxLen = s.length
+
+      let amp = yRange ?? 0
+      if (!yRange) {
+        let peak = 1
+        for (const s of series) {
+          for (let i = 0; i < s.length; i++) {
+            const v = s[i] < 0 ? -s[i] : s[i]
+            if (v > peak) peak = v
+          }
+        }
+        amp = Math.max(40, Math.ceil(peak / 20) * 20)
       }
-      amp = Math.max(40, Math.ceil(peak / 20) * 20)
-    }
 
-    for (let ci = 0; ci < nCh; ci++) {
-      const y0 = ci * laneH
-      const mid = y0 + laneH / 2
+      for (let ci = 0; ci < lanes; ci++) {
+        const top = ci * laneH
+        const mid = top + laneH / 2
+        const color = tint(hueOffsets[ci] ?? 0)
 
-      if (grid) {
-        ctx.strokeStyle = 'rgba(120, 150, 180, 0.12)'
+        ctx.strokeStyle = tint(hueOffsets[ci] ?? 0, 0.5, 0.5, 0.16)
         ctx.lineWidth = 1
         ctx.beginPath()
         ctx.moveTo(0, mid)
         ctx.lineTo(w, mid)
         ctx.stroke()
-        if (ci > 0) {
-          ctx.beginPath()
-          ctx.moveTo(0, y0)
-          ctx.lineTo(w, y0)
-          ctx.stroke()
+
+        if (labels?.[ci]) {
+          ctx.fillStyle = tint(hueOffsets[ci] ?? 0, 0.8, 1, 0.75)
+          ctx.font = '500 10px "JetBrains Mono", monospace'
+          ctx.fillText(labels[ci], 6, top + 13)
         }
-      }
 
-      if (labels?.[ci]) {
-        ctx.fillStyle = colors[ci] ?? '#9ab'
-        ctx.font = '500 11px "JetBrains Mono", monospace'
-        ctx.fillText(labels[ci], 8, y0 + 14)
-      }
+        const data = series[ci]
+        if (!data.length) continue
 
-      const data = series[ci]
-      if (!data.length) continue
-
-      ctx.strokeStyle = colors[ci] ?? '#7ec8e3'
-      ctx.lineWidth = 1.25
-      ctx.beginPath()
-      const start = Math.max(0, maxLen - data.length)
-      for (let i = 0; i < data.length; i++) {
-        const x = ((start + i) / (maxLen - 1 || 1)) * (w - 1)
-        const y = mid - (data[i] / amp) * (laneH * 0.42)
-        if (i === 0) ctx.moveTo(x, y)
-        else ctx.lineTo(x, y)
+        ctx.strokeStyle = color
+        ctx.lineWidth = 1.35
+        ctx.lineJoin = 'round'
+        ctx.beginPath()
+        const start = maxLen - data.length
+        const span = maxLen - 1 || 1
+        for (let i = 0; i < data.length; i++) {
+          const x = ((start + i) / span) * (w - 1)
+          const y = mid - (data[i] / amp) * (laneH * 0.4)
+          if (i === 0) ctx.moveTo(x, y)
+          else ctx.lineTo(x, y)
+        }
+        ctx.stroke()
       }
-      ctx.stroke()
-    }
-  }, [series, colors, labels, height, yRange, grid])
+    },
+    height,
+    [series, hueOffsets, labels, yRange],
+  )
 
   return <canvas ref={canvasRef} className="trace-canvas" />
 }
 
 interface SparkProps {
   data: number[]
+  /** Fixed colour, or omit to follow the live state hue. */
   color?: string
+  hueOffset?: number
   height?: number
   fill?: boolean
 }
 
-export function Sparkline({ data, color = '#3db8a0', height = 56, fill = true }: SparkProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+export function Sparkline({ data, color, hueOffset = 0, height = 56, fill = true }: SparkProps) {
+  const canvasRef = useCanvasDraw(
+    (ctx, w, h) => {
+      if (data.length < 2) return
 
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const parent = canvas.parentElement
-    if (!parent) return
-    const dpr = window.devicePixelRatio || 1
-    const w = parent.clientWidth
-    const h = height
-    canvas.width = Math.max(1, Math.floor(w * dpr))
-    canvas.height = Math.max(1, Math.floor(h * dpr))
-    canvas.style.width = `${w}px`
-    canvas.style.height = `${h}px`
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    ctx.clearRect(0, 0, w, h)
+      let min = data[0]
+      let max = data[0]
+      for (let i = 1; i < data.length; i++) {
+        if (data[i] < min) min = data[i]
+        if (data[i] > max) max = data[i]
+      }
+      const span = max - min || 1
+      const pad = 4
+      const stroke = color ?? tint(hueOffset)
 
-    if (data.length < 2) return
-    const min = Math.min(...data)
-    const max = Math.max(...data)
-    const span = max - min || 1
-    const pad = 4
+      const xs = new Float32Array(data.length)
+      const ys = new Float32Array(data.length)
+      for (let i = 0; i < data.length; i++) {
+        xs[i] = (i / (data.length - 1)) * (w - 1)
+        ys[i] = pad + (1 - (data[i] - min) / span) * (h - pad * 2)
+      }
 
-    const pts = data.map((v, i) => ({
-      x: (i / (data.length - 1)) * (w - 1),
-      y: pad + (1 - (v - min) / span) * (h - pad * 2),
-    }))
+      if (fill) {
+        const grad = ctx.createLinearGradient(0, 0, 0, h)
+        grad.addColorStop(0, color ? `${color}44` : tint(hueOffset, 1, 1, 0.28))
+        grad.addColorStop(1, color ? `${color}00` : tint(hueOffset, 1, 1, 0))
+        ctx.fillStyle = grad
+        ctx.beginPath()
+        ctx.moveTo(xs[0], h)
+        for (let i = 0; i < xs.length; i++) ctx.lineTo(xs[i], ys[i])
+        ctx.lineTo(xs[xs.length - 1], h)
+        ctx.closePath()
+        ctx.fill()
+      }
 
-    if (fill) {
-      const grad = ctx.createLinearGradient(0, 0, 0, h)
-      grad.addColorStop(0, color + '55')
-      grad.addColorStop(1, color + '00')
-      ctx.fillStyle = grad
+      ctx.strokeStyle = stroke
+      ctx.lineWidth = 1.6
+      ctx.lineJoin = 'round'
       ctx.beginPath()
-      ctx.moveTo(pts[0].x, h)
-      pts.forEach((p) => ctx.lineTo(p.x, p.y))
-      ctx.lineTo(pts[pts.length - 1].x, h)
-      ctx.closePath()
-      ctx.fill()
-    }
-
-    ctx.strokeStyle = color
-    ctx.lineWidth = 1.75
-    ctx.beginPath()
-    pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)))
-    ctx.stroke()
-  }, [data, color, height, fill])
+      for (let i = 0; i < xs.length; i++) {
+        if (i === 0) ctx.moveTo(xs[i], ys[i])
+        else ctx.lineTo(xs[i], ys[i])
+      }
+      ctx.stroke()
+    },
+    height,
+    [data, color, hueOffset, fill],
+  )
 
   return <canvas ref={canvasRef} className="trace-canvas" />
 }

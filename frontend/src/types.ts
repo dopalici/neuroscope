@@ -43,17 +43,19 @@ export type ServerMessage = MetaMessage | FrameMessage
 export const BAND_ORDER = ['delta', 'theta', 'alpha', 'beta', 'gamma'] as const
 export type BandName = (typeof BAND_ORDER)[number]
 
+/** Earth-tone band identities: soil → moss → ochre → clay → rust. */
 export const BAND_COLORS: Record<BandName, string> = {
-  delta: '#5b8def',
-  theta: '#3db8a0',
-  alpha: '#e8b84a',
-  beta: '#e07a45',
-  gamma: '#c45c8a',
+  delta: '#7c6247',
+  theta: '#848c5c',
+  alpha: '#d8a75d',
+  beta: '#c2703f',
+  gamma: '#a8452f',
 }
 
-export const CHANNEL_COLORS: Record<string, string> = {
-  TP9: '#5b8def',
-  AF7: '#3db8a0',
-  AF8: '#e8b84a',
-  TP10: '#e07a45',
+/** Hue offsets from the live state colour, so traces breathe with the state. */
+export const CHANNEL_HUE_OFFSETS: Record<string, number> = {
+  TP9: -18,
+  AF7: -6,
+  AF8: 8,
+  TP10: 22,
 }

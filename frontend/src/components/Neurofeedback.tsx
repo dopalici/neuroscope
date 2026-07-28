@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Sparkline } from './Charts'
 import { InfoBox, Section } from './Section'
+import { feedbackScore } from '../state/brainState'
 import type { FrameMessage } from '../types'
 
 interface Props {
@@ -12,11 +13,7 @@ interface Props {
 export function NeurofeedbackSection({ frame, alphaHistory }: Props) {
   const calm = frame?.indices.calm ?? 0
   const alpha = frame?.indices.alpha_abs ?? 0
-
-  // Map calm 0–1 into a visual scale with a soft target band around 0.35–0.55.
-  const score = clamp01((calm - 0.15) / 0.45)
-  const size = 40 + score * 140
-  const glow = 0.15 + score * 0.75
+  const score = feedbackScore(frame)
 
   const tip = useMemo(() => {
     if (score < 0.35) return 'Try softening the gaze or closing your eyes for a few seconds.'
@@ -29,13 +26,14 @@ export function NeurofeedbackSection({ frame, alphaHistory }: Props) {
       <div className="split">
         <div className="viz nf-viz">
           <div className="nf-stage">
+            {/* Size and glow are driven by the score; colour is inherited from
+                the live state, so the bloom and the word always agree. */}
             <div
               className="nf-bloom"
               style={{
-                width: size,
-                height: size,
-                boxShadow: `0 0 ${40 + score * 80}px rgba(61, 184, 160, ${glow})`,
-                opacity: 0.55 + score * 0.4,
+                width: 44 + score * 150,
+                height: 44 + score * 150,
+                opacity: 0.5 + score * 0.45,
               }}
             />
             <div className="nf-readout">
@@ -47,7 +45,7 @@ export function NeurofeedbackSection({ frame, alphaHistory }: Props) {
               </div>
             </div>
           </div>
-          <Sparkline data={alphaHistory} color="#e8b84a" height={52} />
+          <Sparkline data={alphaHistory} hueOffset={12} height={52} />
           <p className="viz-caption">{tip}</p>
         </div>
         <InfoBox credibility="This is a teaching toy, not therapy. The bloom tracks relative alpha / calm index from the same heuristics as section 03. Real clinical neurofeedback uses controlled protocols, baselines, and often better electrode coverage.">
@@ -64,8 +62,4 @@ export function NeurofeedbackSection({ frame, alphaHistory }: Props) {
       </div>
     </Section>
   )
-}
-
-function clamp01(x: number) {
-  return Math.max(0, Math.min(1, x))
 }
