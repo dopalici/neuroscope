@@ -16,6 +16,8 @@ import { BodySignalsSection } from './components/BodySignals'
 import { HeartMotionSection } from './components/HeartMotion'
 import { NeurofeedbackSection } from './components/Neurofeedback'
 import type { SectionId } from './state/brainState'
+import { navigate } from './routes'
+import { GestureLayer } from './mirror/GestureLayer'
 import './App.css'
 
 const NAV = [
@@ -38,6 +40,17 @@ export default function App() {
   const active = useActiveSection(SECTION_IDS)
   const liveState = useBrainState()
   const [snapshot, setSnapshot] = useState<PanelSnapshot | null>(null)
+  const [gestures, setGestures] = useState(false)
+  const [gestureStatus, setGestureStatus] = useState('off')
+  const [gestureNote, setGestureNote] = useState<string | null>(null)
+
+  const onGestureStatus = useCallback((status: string, message: string | null) => {
+    setGestureStatus(status)
+    setGestureNote(
+      message ??
+        (status === 'ready' ? 'hands tracking · pinch both hands and pull apart to open' : null),
+    )
+  }, [])
 
   useAtmosphereEngine(stream.frame, active)
 
@@ -105,18 +118,56 @@ export default function App() {
 
           <StateBadge section={active} onOpen={openPanel} expanded={snapshot !== null} />
 
-          <nav className="nav">
-            {NAV.map((n) => (
-              <a
-                key={n.id}
-                href={`#${n.id}`}
-                className={n.id === active ? 'is-active' : undefined}
-              >
-                {n.label}
-              </a>
-            ))}
-          </nav>
+          <div className="topbar-row">
+            <nav className="nav">
+              {NAV.map((n) => (
+                <a
+                  key={n.id}
+                  href={`#${n.id}`}
+                  className={n.id === active ? 'is-active' : undefined}
+                >
+                  {n.label}
+                </a>
+              ))}
+            </nav>
+
+            {/* Not a seventh nav anchor: the mirror is a full-screen mode, and
+                letting it sit in the section list would imply you can scroll to it. */}
+            <button
+              type="button"
+              className="mode-enter"
+              onClick={() => navigate('mirror')}
+            >
+              <span className="mode-enter-mark">◈</span>
+              Enter Mirror
+            </button>
+
+            {/* The open-window gesture needs a camera that is already running,
+                and this project is not going to start one without being asked. */}
+            <button
+              type="button"
+              className="mode-toggle"
+              aria-pressed={gestures}
+              onClick={() => setGestures((on) => !on)}
+            >
+              {gestures ? '● camera on' : 'Gesture control'}
+            </button>
+          </div>
           {stream.error && <p className="status-err">{stream.error}</p>}
+          {gestures && gestureNote && (
+            <p
+              className={
+                gestureStatus === 'error' ||
+                gestureStatus === 'denied' ||
+                gestureStatus === 'missing' ||
+                gestureStatus === 'insecure'
+                  ? 'status-err'
+                  : 'status-note'
+              }
+            >
+              {gestureNote}
+            </p>
+          )}
         </header>
 
         <main className="main">
@@ -151,6 +202,8 @@ export default function App() {
       </div>
 
       <StatePanel snapshot={snapshot} liveWord={liveState.word} onClose={closePanel} />
+
+      <GestureLayer enabled={gestures} onStatus={onGestureStatus} />
     </>
   )
 }

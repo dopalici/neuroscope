@@ -34,7 +34,10 @@ export interface FrameMessage {
     blink_rate: number
     jaw_rate: number
   }
-  heart: { hr: number; hrv: number; n_beats: number }
+  /** Per-channel RMS µV over the newest ~100 ms — the only sub-second drive. */
+  envelope: Record<string, number>
+  /** `beats` are epoch seconds per detected PPG peak, newest last. */
+  heart: { hr: number; hrv: number; n_beats: number; beats: number[] }
   motion: { motion: number; posture: number; still: boolean }
 }
 

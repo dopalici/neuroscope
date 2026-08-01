@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mediapipe": "bash scripts/fetch-mediapipe.sh"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7"
   },

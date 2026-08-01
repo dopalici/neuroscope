@@ -51,6 +51,17 @@ UPDATE_RATE_HZ = 10.0
 # How many seconds of raw EEG the frontend scrolling traces show.
 RAW_DISPLAY_SECONDS = 4.0
 
+# Welch over 2 s cannot describe anything faster than about half a second, so a
+# short RMS envelope is computed alongside it. 100 ms is long enough to average
+# out a single 44 Hz cycle and short enough to still contain a blink's rising
+# edge, which is what a 60 fps consumer needs.
+ENVELOPE_SECONDS = 0.1
+ENVELOPE_SAMPLES = int(ENVELOPE_SECONDS * EEG_SAMPLE_RATE)  # 25
+
+# How far back PPG beat timestamps are reported. The PPG ring is 8 s long, so
+# anything older than this has already fallen out of the detection window.
+BEAT_HISTORY_SECONDS = 8.0
+
 # --- Bandpass filter for the raw display / processing ---------------------
 FILTER_LOW = 1.0    # Hz  (removes slow drift / DC)
 FILTER_HIGH = 44.0  # Hz  (removes high-frequency muscle noise & mains)

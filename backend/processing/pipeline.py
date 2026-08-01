@@ -108,6 +108,16 @@ class Pipeline:
             "jaw_rate": len(self._jaw_events),
         }
 
+    # -- short-window amplitude -------------------------------------------
+    def _envelope(self, win_clean: np.ndarray) -> dict:
+        """Per-channel RMS (uV) over the newest ~100 ms of cleaned EEG."""
+        n = config.ENVELOPE_SAMPLES
+        if win_clean.shape[0] < n:
+            return {ch: 0.0 for ch in config.EEG_CHANNELS}
+        tail = win_clean[-n:]
+        rms = np.sqrt(np.mean(tail ** 2, axis=0))
+        return {ch: round(float(rms[ci]), 2) for ci, ch in enumerate(config.EEG_CHANNELS)}
+
     # -- frame -------------------------------------------------------------
     def frame(self) -> dict:
         now = time.time()
@@ -141,8 +151,9 @@ class Pipeline:
 
         idx = indices.compute_indices(bands)
         art = self._update_artifacts(now, win_clean if win_clean.shape[0] else win)
-        hr = heart.heart_metrics(self.ppg.data)
+        hr = heart.heart_metrics(self.ppg.data, now=now)
         mot = motion.motion_metrics(self.acc.data, self.gyro.data)
+        env = self._envelope(win_clean)
 
         # New raw EEG per channel (rounded to keep the payload small).
         eeg_new = [np.round(new_eeg[:, ci], 1).tolist() for ci in range(4)] \
@@ -159,6 +170,7 @@ class Pipeline:
             "quality": quality,
             "indices": {k: round(v, 4) for k, v in idx.items()},
             "artifacts": art,
+            "envelope": env,
             "heart": {k: round(v, 1) if isinstance(v, float) else v for k, v in hr.items()},
             "motion": {"motion": round(mot["motion"], 1),
                         "posture": round(mot["posture"], 1),

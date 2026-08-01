@@ -254,6 +254,15 @@ body {
   color: var(--rust);
 }
 
+.status-note {
+  grid-column: 1 / -1;
+  margin: 0.25rem 0 0;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  color: var(--sand);
+}
+
 /* —— The state word ————————————————————————————————————————
    One word for whatever the section in view is measuring, in its live hue. */
 
@@ -343,12 +352,19 @@ body {
 
 /* —— Nav ——————————————————————————————————————————————————— */
 
-.nav {
+.topbar-row {
   grid-column: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.3rem 0.9rem;
+  margin-top: 0.35rem;
+}
+
+.nav {
   display: flex;
   flex-wrap: wrap;
   gap: 0.3rem;
-  margin-top: 0.35rem;
 }
 
 .nav a {
@@ -371,6 +387,56 @@ body {
   color: var(--paper);
   border-color: var(--line-strong);
   background: rgba(240, 231, 218, 0.05);
+}
+
+/* Deliberately not shaped like a nav pill — this leaves the page. */
+.mode-enter,
+.mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.32rem 0.8rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sand);
+  background: color-mix(in srgb, var(--ochre) 9%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ochre) 34%, transparent);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.mode-enter:hover,
+.mode-toggle:hover {
+  color: var(--paper);
+  border-color: var(--ochre);
+  background: color-mix(in srgb, var(--ochre) 18%, transparent);
+}
+
+.mode-enter-mark {
+  color: var(--ochre);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.mode-toggle[aria-pressed='true'] {
+  color: var(--soil-0);
+  background: var(--ochre);
+  border-color: var(--ochre);
+}
+
+.mirror-boot {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: #0a0806;
 }
 
 /* —— Sections ——————————————————————————————————————————————
