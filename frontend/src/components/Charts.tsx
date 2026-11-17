@@ -9,9 +9,9 @@ import { atmosphere } from '../state/atmosphere'
  * throw away and reallocate the buffer.
  */
 function prepare(canvas: HTMLCanvasElement, height: number) {
-  const parent = canvas.parentElement
-  if (!parent) return null
-  const width = parent.clientWidth
+  canvas.style.width = '100%'
+  canvas.style.height = `${height}px`
+  const width = canvas.clientWidth
   if (width <= 0) return null
 
   const dpr = window.devicePixelRatio || 1
@@ -20,8 +20,6 @@ function prepare(canvas: HTMLCanvasElement, height: number) {
   if (canvas.width !== pixelW || canvas.height !== pixelH) {
     canvas.width = pixelW
     canvas.height = pixelH
-    canvas.style.width = `${width}px`
-    canvas.style.height = `${height}px`
   }
 
   const ctx = canvas.getContext('2d')

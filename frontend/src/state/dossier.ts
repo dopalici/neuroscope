@@ -329,7 +329,7 @@ export function readingFor(section: SectionId, frame: FrameMessage | null): Read
       return BAND_ORDER.map((band) => {
         const share = (frame.bands_avg[band] ?? 0) / total
         return {
-          label: band,
+          label: band[0].toUpperCase() + band.slice(1),
           value: `${(share * 100).toFixed(0)}% of power · ×${(share / BAND_REFERENCE[band]).toFixed(2)} of typical`,
         }
       })

@@ -990,7 +990,6 @@ body {
 
 .panel-reading dt {
   color: var(--muted);
-  text-transform: capitalize;
 }
 
 .panel-reading dd {

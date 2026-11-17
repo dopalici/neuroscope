@@ -172,6 +172,24 @@ The interface avoids clinical styling in favor of an earth-tone visual system wh
 
 Clicking the state word opens a frozen snapshot panel detailing the exact formula, captured numerical values, underlying neurophysiology, and explicit interpretive limits.
 
+### Interface Preview & State Transitions (Simulation Mode)
+
+#### `01 · Signal` — Contact Quality & 4-Channel Raw EEG
+![Signal Quality and 4-channel EEG](docs/screenshots/01_signal_raw_eeg.png)
+
+#### `02 · Bands` — Spectral Profile Shift (Alpha-Dominant `Open` vs. Beta-Dominant `Sharp`)
+| Alpha-dominant (`SIM_ALPHA=3.4 SIM_BETA=0.25`) | Beta-dominant (`SIM_ALPHA=0.35 SIM_BETA=2.8`) |
+|---|---|
+| ![Alpha-dominant Bands Open](docs/screenshots/02a_bands_alpha_dominant.png) | ![Beta-dominant Bands Sharp](docs/screenshots/02b_bands_beta_dominant.png) |
+
+#### `03 · Focus` — $\beta/\alpha$ & Relative-$\alpha$ Ratio Shift (`Soft` vs. `Charged`)
+| Restful alpha-rich (`Soft`, $\beta/\alpha = 0.44$) | Alert beta-rich (`Charged`, $\beta/\alpha = 4.19$) |
+|---|---|
+| ![Alpha-rich Focus Soft](docs/screenshots/03a_focus_alpha_soft.png) | ![Beta-rich Focus Charged](docs/screenshots/03b_focus_beta_charged.png) |
+
+#### `06 · Feedback` — Alpha-Driven Bloom & Inspectable Physiological Dossier
+![Neurofeedback Bloom and Dossier Panel](docs/screenshots/04_feedback_with_dossier.png)
+
 ---
 
 ## 8. Configuration & Verification
@@ -202,6 +220,7 @@ neuroscope/
 │   ├── config.py               # Hardware constants, band edges, thresholds
 │   ├── sources/                # DataSource interface, SimulatedSource, LSLSource
 │   └── processing/             # filters, bandpower, indices, artifacts, heart, motion, pipeline
+├── docs/screenshots/           # Captured UI previews across wave-ratio states
 ├── frontend/                   # React 19 + TypeScript + Vite dashboard & Terra state system
 ├── tests/                      # Python unit & end-to-end simulation pipeline tests
 ├── CITATION.cff
