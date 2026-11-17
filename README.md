@@ -299,6 +299,20 @@ Official Interaxon LibMuse / MuseLab packages are **not** part of this repo and 
 
 ---
 
+## References
+
+- Allen, J.J.B., Coan, J.A. and Nazarian, M. (2004) 'Issues and assumptions on the road from raw signals to metrics of frontal EEG asymmetry in emotion', *Biological Psychology*, 67(1–2), pp. 183–218. https://doi.org/10.1016/j.biopsycho.2004.03.007
+- Davidson, R.J. (2004) 'What does the prefrontal cortex "do" in affect: perspectives on frontal EEG asymmetry research', *Biological Psychology*, 67(1–2), pp. 219–233. https://doi.org/10.1016/j.biopsycho.2004.03.008
+- Donoghue, T. *et al.* (2020) 'Parameterizing neural power spectra into periodic and aperiodic components', *Nature Neuroscience*, 23(12), pp. 1655–1665. https://doi.org/10.1038/s41593-020-00744-x
+- Jensen, O. and Mazaheri, A. (2010) 'Shaping functional architecture by oscillatory alpha activity: gating by inhibition', *Frontiers in Human Neuroscience*, 4, article 186. https://doi.org/10.3389/fnhum.2010.00186
+- Klimesch, W. (1999) 'EEG alpha and theta oscillations reflect cognitive and memory performance: a review and analysis', *Brain Research Reviews*, 29(2–3), pp. 169–195. https://doi.org/10.1016/S0165-0173(98)00056-3
+- Kothe, C. *et al.* (2025) 'The lab streaming layer for synchronized multimodal recording', *Imaging Neuroscience*, 3, article IMAG.a.136. https://doi.org/10.1162/IMAG.a.136
+- Krigolson, O.E. *et al.* (2017) 'Choosing MUSE: validation of a low-cost, portable EEG system for ERP research', *Frontiers in Neuroscience*, 11, article 109. https://doi.org/10.3389/fnins.2017.00109
+- Shaffer, F. and Ginsberg, J.P. (2017) 'An overview of heart rate variability metrics and norms', *Frontiers in Public Health*, 5, article 258. https://doi.org/10.3389/fpubh.2017.00258
+- Welch, P.D. (1967) 'The use of fast Fourier transform for the estimation of power spectra: a method based on time averaging over short, modified periodograms', *IEEE Transactions on Audio and Electroacoustics*, 15(2), pp. 70–73. https://doi.org/10.1109/TAU.1967.1161901
+
+---
+
 ## Citing
 
 If you use NeuroScope in research, teaching, or derived work, please cite it.
