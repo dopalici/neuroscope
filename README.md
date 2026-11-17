@@ -13,6 +13,12 @@ Muse 2 ──BLE──► muselsl ──LSL──► Python (NumPy / SciPy) ─�
 
 NeuroScope is an open, reproducible **educational and exploratory biosignal pipeline** designed to make the assumptions, transformations, and failure modes of four-channel dry-electrode consumer EEG transparent in real time.
 
+### Author's Note (Design vs. Implementation)
+
+I am a Year 1 *Neuroscience with Psychology* undergraduate at the University of Sussex exploring brain–computer interfaces and closed-loop neurofeedback.
+- **My contribution (systems & experimental design):** End-to-end signal-processing architecture (`LSL → Butterworth bandpass → Welch PSD → EOG/EMG artifact detection → WebSocket → Canvas UI`), Muse 2 montage caveats, and the synthetic validation pipeline (`SimulatedSource`).
+- **Implementation:** Software code (`Python` / `React` / `TypeScript`) was prototyped using AI-assisted coding tools as I build up my formal programming and open-hardware skills.
+
 ### What this project is
 - An end-to-end reference architecture for real-time biosignal acquisition and visualization: Lab Streaming Layer (LSL) ingress → digital filtering, spectral estimation, and artifact gating → 10 Hz WebSocket telemetry → `requestAnimationFrame`-decoupled Canvas UI.
 - A transparent instrument for demonstrating canonical EEG phenomena (spectral $1/f$ scaling, eyes-closed posterior/temporal $\alpha$ elevation, $\alpha$-blocking under cognitive load, corneo-retinal blink dipoles, and masseter/temporalis EMG contamination).
@@ -91,7 +97,7 @@ Artifact detectors operate on the **unfiltered** trailing $2.0\text{ s}$ window 
 1. **No occipital coverage:** Muse 2 lacks `O1`/`O2`/`Oz` electrodes. Resting-state occipital $\alpha$ reaches `TP9`/`TP10` and `AF7`/`AF8` only via attenuated volume conduction, yielding smaller $\alpha$ peaks than a standard 10–20 research cap.
 2. **Frontal ocular and EMG vulnerability:** `AF7`/`AF8` sit directly above the orbits and frontalis, while `TP9`/`TP10` sit near the temporalis and masseter. Broadband EMG ($20\text{–}200+\text{ Hz}$) overlaps $\beta$ and $\gamma$, meaning sub-threshold jaw or brow tension can inflate the Focus ratio.
 3. **Shared Fpz reference & FAA noise:** Both `AF7` and `AF8` are referenced to a single forehead site near `Fpz`, substantially reducing left-right independence and making dry-contact FAA highly sensitive to asymmetric pad impedance.
-4. **Aperiodic $1/f$ confounding:** Narrowband power integrates both periodic oscillations and the broadband aperiodic $1/f$ background (Donoghue et al., 2020); a change in spectral slope shifts $\beta/\alpha$ and relative $\alpha$ even without a true oscillatory change.
+4. **Aperiodic $1/f$ confounding:** Narrowband power integrates both periodic oscillations and the broadband aperiodic $1/f$ background (Donoghue *et al.*, 2020); a change in spectral slope shifts $\beta/\alpha$ and relative $\alpha$ even without a true oscillatory change.
 5. **Motion coupling:** Head movement simultaneously introduces low-frequency electrode-motion potentials into $\delta$ ($1\text{–}4\text{ Hz}$) and mechanical shear into the optical PPG signal.
 
 ---
@@ -235,15 +241,15 @@ Official Interaxon LibMuse / MuseLab SDKs are **not** bundled or required; live 
 
 ## 10. References
 
-- Allen, J. J. B., Coan, J. A., & Nazarian, M. (2004). Issues and assumptions on the road from raw signals to metrics of frontal EEG asymmetry in emotion. *Biological Psychology*, 67(1–2), 183–218.
-- Davidson, R. J. (2004). What does the prefrontal cortex "do" in affect: perspectives on frontal EEG asymmetry research. *Biological Psychology*, 67(1–2), 219–234.
-- Donoghue, T., et al. (2020). Parameterizing neural power spectra into periodic and aperiodic components. *Nature Neuroscience*, 23(12), 1655–1665.
-- Jensen, O., & Mazaheri, A. (2010). Shaping functional architecture by oscillatory alpha activity: gating by inhibition. *Frontiers in Human Neuroscience*, 4, 186.
-- Klimesch, W. (1999). EEG alpha and theta oscillations reflect cognitive and memory performance: a review and analysis. *Brain Research Reviews*, 29(2–3), 169–195.
-- Kothe, C., et al. Lab Streaming Layer (LSL). https://labstreaminglayer.org
-- Krigolson, O. E., Williams, C. C., Norton, A., Hassall, C. D., & Colino, F. L. (2017). Choosing MUSE: Validation of a low-cost, portable EEG system for ERP research. *Frontiers in Neuroscience*, 11, 109.
-- Shaffer, F., & Ginsberg, J. P. (2017). An overview of heart rate variability metrics and norms. *Frontiers in Public Health*, 5, 258.
-- Welch, P. D. (1967). The use of fast Fourier transform for the estimation of power spectra: A method based on time averaging over short, modified periodograms. *IEEE Transactions on Audio and Electroacoustics*, 15(2), 70–73.
+- Allen, J.J.B., Coan, J.A. and Nazarian, M. (2004) 'Issues and assumptions on the road from raw signals to metrics of frontal EEG asymmetry in emotion', *Biological Psychology*, 67(1–2), pp. 183–218. https://doi.org/10.1016/j.biopsycho.2004.03.007
+- Davidson, R.J. (2004) 'What does the prefrontal cortex "do" in affect: perspectives on frontal EEG asymmetry research', *Biological Psychology*, 67(1–2), pp. 219–233. https://doi.org/10.1016/j.biopsycho.2004.03.008
+- Donoghue, T. *et al.* (2020) 'Parameterizing neural power spectra into periodic and aperiodic components', *Nature Neuroscience*, 23(12), pp. 1655–1665. https://doi.org/10.1038/s41593-020-00744-x
+- Jensen, O. and Mazaheri, A. (2010) 'Shaping functional architecture by oscillatory alpha activity: gating by inhibition', *Frontiers in Human Neuroscience*, 4, article 186. https://doi.org/10.3389/fnhum.2010.00186
+- Klimesch, W. (1999) 'EEG alpha and theta oscillations reflect cognitive and memory performance: a review and analysis', *Brain Research Reviews*, 29(2–3), pp. 169–195. https://doi.org/10.1016/S0165-0173(98)00056-3
+- Kothe, C. *et al.* (2025) 'The lab streaming layer for synchronized multimodal recording', *Imaging Neuroscience*, 3, article IMAG.a.136. https://doi.org/10.1162/IMAG.a.136
+- Krigolson, O.E. *et al.* (2017) 'Choosing MUSE: validation of a low-cost, portable EEG system for ERP research', *Frontiers in Neuroscience*, 11, article 109. https://doi.org/10.3389/fnins.2017.00109
+- Shaffer, F. and Ginsberg, J.P. (2017) 'An overview of heart rate variability metrics and norms', *Frontiers in Public Health*, 5, article 258. https://doi.org/10.3389/fpubh.2017.00258
+- Welch, P.D. (1967) 'The use of fast Fourier transform for the estimation of power spectra: a method based on time averaging over short, modified periodograms', *IEEE Transactions on Audio and Electroacoustics*, 15(2), pp. 70–73. https://doi.org/10.1109/TAU.1967.1161901
 
 ---
 
