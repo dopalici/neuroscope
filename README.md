@@ -26,6 +26,12 @@ A full **simulation mode** runs with no hardware, so the stack is demable and de
 | **Serving** | FastAPI · async WebSocket (~10 Hz frames) |
 | **UI** | React · TypeScript · Vite · WebGL Mirror · MediaPipe hands |
 
+### Author's Note (Design vs. Implementation)
+
+I am a Year 1 *Neuroscience with Psychology* undergraduate at the University of Sussex exploring brain–computer interfaces and closed-loop neurofeedback.
+- **My contribution (systems & experimental design):** End-to-end signal-processing architecture (`LSL → Butterworth bandpass → Welch PSD / RMS envelope → artifact veto → WebSocket → UI`), Muse 2 montage constraints, within-session z-score baseline calibration, and the Sham causality control.
+- **Implementation:** Software code (`Python` / `React` / `WebGL`) was prototyped using AI-assisted coding tools as I build up my formal programming and open-hardware skills.
+
 ---
 
 ## What this is / what this is not
