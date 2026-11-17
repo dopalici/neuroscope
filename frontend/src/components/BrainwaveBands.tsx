@@ -45,7 +45,9 @@ export function BrainwaveBandsSection({ frame }: Props) {
               )
             })}
           </div>
-          <p className="viz-caption">Absolute band power (Welch) · averaged over TP9–TP10</p>
+          <p className="viz-caption">
+            Absolute band power (Welch) · averaged across TP9, AF7, AF8, TP10 (µV²)
+          </p>
         </div>
         <InfoBox credibility="Band powers here are real spectral estimates from the last ~2 s of EEG. Absolute µV² values vary a lot between people and sessions — watch relative changes in yourself, not the number against a stranger.">
           <p>

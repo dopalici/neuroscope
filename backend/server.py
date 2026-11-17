@@ -57,8 +57,9 @@ class Hub:
     async def run_loop(self) -> None:
         """Poll the source, process, and broadcast frames at UPDATE_RATE_HZ."""
         period = 1.0 / config.UPDATE_RATE_HZ
+        loop = asyncio.get_running_loop()
         while True:
-            tick = asyncio.get_event_loop().time()
+            tick = loop.time()
             try:
                 batch = self.source.poll()
                 self.pipeline.add(batch)
@@ -67,7 +68,7 @@ class Hub:
             except Exception as exc:  # keep the loop alive; report once
                 self.last_error = repr(exc)
                 print(f"[hub] processing error: {exc!r}")
-            elapsed = asyncio.get_event_loop().time() - tick
+            elapsed = loop.time() - tick
             await asyncio.sleep(max(0.0, period - elapsed))
 
     async def _broadcast(self, message: dict) -> None:

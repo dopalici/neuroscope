@@ -1,5 +1,5 @@
-# NeuroScope backend dependencies (Python 3.11 or 3.12 -- NOT 3.14).
-# Pinned to versions verified working on macOS / Apple Silicon, July 2026.
+# NeuroScope backend dependencies (Python 3.12 -- NOT 3.14; numpy 2.5+ requires >=3.12).
+# Pinned to versions verified working on macOS / Apple Silicon & Linux, 2026.
 
 # --- Numerics & signal processing ---
 numpy==2.5.1

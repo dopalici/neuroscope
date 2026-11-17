@@ -48,7 +48,7 @@ export function NeurofeedbackSection({ frame, alphaHistory }: Props) {
           <Sparkline data={alphaHistory} hueOffset={12} height={52} />
           <p className="viz-caption">{tip}</p>
         </div>
-        <InfoBox credibility="This is a teaching toy, not therapy. The bloom tracks relative alpha / calm index from the same heuristics as section 03. Real clinical neurofeedback uses controlled protocols, baselines, and often better electrode coverage.">
+        <InfoBox credibility="This is an educational demonstration loop, not clinical neurofeedback. The bloom tracks relative alpha / calm index from the same heuristics as section 03. Validated neurofeedback protocols use individualized baselines, artifact rejection, and controlled reward schedules.">
           <p>
             Neurofeedback means: show your brain a live signal and let you practice
             shifting it. Here the circle grows when the calm/alpha index rises.

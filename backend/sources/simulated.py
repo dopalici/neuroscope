@@ -23,9 +23,16 @@ import os
 import time
 
 import numpy as np
+from scipy.signal import lfilter, lfilter_zi
 
 from .. import config
 from .base import DataSource, SampleBatch
+
+# Paul Kellet 3-pole/3-zero IIR pinking filter (1/f PSD over 1-80 Hz at 256 Hz).
+# Output std for unit white-noise input is ~0.088.
+_PINK_B = np.array([0.049922035, -0.095993537, 0.050612699, -0.004408786])
+_PINK_A = np.array([1.0, -2.494956002, 2.017265875, -0.522189400])
+_PINK_GAIN = 0.088
 
 
 class SimulatedSource(DataSource):
@@ -45,9 +52,25 @@ class SimulatedSource(DataSource):
         self.alpha_level = float(os.environ.get("SIM_ALPHA", 1.0))
         self.beta_level = float(os.environ.get("SIM_BETA", 1.0))
 
+        # Fixed initial phases per (channel, band) so sinusoids stay phase-continuous
+        # across 10 Hz poll chunks.
+        self._phases: dict[tuple[str, str], tuple[float, float]] = {
+            (ch, band): (
+                float(self.rng.uniform(0, 2 * np.pi)),
+                float(self.rng.uniform(0, 2 * np.pi)),
+            )
+            for ch in config.EEG_CHANNELS
+            for band in config.BANDS
+        }
+        # Stateful 1/f filter memory per EEG channel.
+        self._pink_zi: list[np.ndarray] = [
+            lfilter_zi(_PINK_B, _PINK_A) * 0.0 for _ in config.EEG_CHANNELS
+        ]
+
         # Scheduled event clocks (absolute seconds since start).
-        self._next_blink = self.rng.exponential(3.0)
-        self._next_jaw = 6.0 + self.rng.exponential(15.0)
+        self._blink_events: list[tuple[float, float, float]] = []
+        self._next_blink = 1.5 + float(self.rng.exponential(3.5))
+        self._next_jaw = 5.0 + float(self.rng.exponential(12.0))
         # Absolute times (s since start) of every scheduled heartbeat, extended
         # forward as needed and pruned once safely in the past.
         self._beat_times: list[float] = []
@@ -55,36 +78,33 @@ class SimulatedSource(DataSource):
         self._jaw_active_until = -1.0
         # Posture: a slowly changing tilt vector (unit-ish) plus base gravity.
         self._tilt = np.zeros(3)
-        self._next_posture = self.rng.exponential(8.0)
+        self._next_posture = float(self.rng.exponential(8.0))
 
     # -- lifecycle ---------------------------------------------------------
     def start(self) -> None:
         self._start_time = time.time()
         self._eeg_n = self._ppg_n = self._imu_n = 0
+        self._pink_zi = [lfilter_zi(_PINK_B, _PINK_A) * 0.0 for _ in config.EEG_CHANNELS]
 
     def stop(self) -> None:  # nothing to release
         pass
 
     # -- helpers -----------------------------------------------------------
-    def _pink_noise(self, n: int, amp: float) -> np.ndarray:
-        """Cheap 1/f-ish noise via cumulative-sum of white noise, detrended."""
+    def _pink_noise(self, ch_idx: int, n: int, amp: float) -> np.ndarray:
+        """Continuous 1/f background noise via stateful IIR filtering."""
         if n <= 0:
             return np.zeros(0)
         white = self.rng.standard_normal(n)
-        pink = np.cumsum(white)
-        pink -= np.linspace(pink[0], pink[-1], n)  # remove the random walk drift
-        std = pink.std()
-        if std > 0:
-            pink /= std
-        return pink * amp
+        pink, self._pink_zi[ch_idx] = lfilter(_PINK_B, _PINK_A, white, zi=self._pink_zi[ch_idx])
+        return pink * (amp / _PINK_GAIN)
 
-    def _osc(self, t: np.ndarray, f_lo: float, f_hi: float, amp: float) -> np.ndarray:
-        """A narrow-band oscillation: a couple of sinusoids inside a band."""
-        out = np.zeros_like(t)
-        for f in (f_lo + 0.3 * (f_hi - f_lo), f_lo + 0.7 * (f_hi - f_lo)):
-            phase = self.rng.uniform(0, 2 * np.pi)
-            out += np.sin(2 * np.pi * f * t + phase)
-        return out * amp
+    def _osc(self, ch: str, band: str, t: np.ndarray, amp: float) -> np.ndarray:
+        """Phase-continuous narrow-band oscillation inside a configured band."""
+        f_lo, f_hi = config.BANDS[band]
+        p1, p2 = self._phases[(ch, band)]
+        f1 = f_lo + 0.3 * (f_hi - f_lo)
+        f2 = f_lo + 0.7 * (f_hi - f_lo)
+        return (np.sin(2 * np.pi * f1 * t + p1) + np.sin(2 * np.pi * f2 * t + p2)) * amp
 
     # -- main generators ---------------------------------------------------
     def _gen_eeg(self, n: int) -> tuple[np.ndarray, np.ndarray]:
@@ -95,21 +115,22 @@ class SimulatedSource(DataSource):
         if n == 0:
             return np.empty((0, 4)), self._start_time + t
 
-        # Slow drift of the alpha level so the neurofeedback bar visibly moves.
-        drift = 0.6 + 0.4 * np.sin(2 * np.pi * 0.05 * t)  # ~20 s cycle
-        alpha_amp = 18.0 * self.alpha_level * drift
-        beta_amp = 7.0 * self.beta_level * (1.1 - 0.3 * np.sin(2 * np.pi * 0.05 * t))
+        # Slow drift of alpha/beta levels (~20 s cycle) so the dashboard traverses
+        # resting and engaged states during a live demonstration.
+        drift = 0.65 + 0.45 * np.sin(2 * np.pi * 0.05 * t)
+        alpha_amp = 6.5 * self.alpha_level * drift
+        beta_amp = 2.6 * self.beta_level * (1.05 - 0.35 * np.sin(2 * np.pi * 0.05 * t))
 
         out = np.zeros((n, 4))
         for ci, ch in enumerate(config.EEG_CHANNELS):
-            sig = self._pink_noise(n, amp=14.0)
-            sig += self._osc(t, *config.BANDS["delta"], 10.0)
-            sig += self._osc(t, *config.BANDS["theta"], 6.0)
-            # Posterior (temporal) channels carry a bit more alpha, like real life.
+            sig = self._pink_noise(ci, n, amp=22.0)
+            sig += self._osc(ch, "delta", t, 5.5)
+            sig += self._osc(ch, "theta", t, 5.0)
+            # Temporal/posterior channels carry slightly stronger resting alpha.
             a_scale = 1.25 if ch in config.TEMPORAL_CHANNELS else 0.85
-            sig += a_scale * self._osc(t, *config.BANDS["alpha"], 1.0) * alpha_amp
-            sig += self._osc(t, *config.BANDS["beta"], 1.0) * beta_amp
-            sig += self._osc(t, *config.BANDS["gamma"], 2.0)
+            sig += a_scale * self._osc(ch, "alpha", t, 1.0) * alpha_amp
+            sig += self._osc(ch, "beta", t, 1.0) * beta_amp
+            sig += self._osc(ch, "gamma", t, 1.5)
             out[:, ci] = sig
 
         self._inject_blinks(out, t)
@@ -118,43 +139,40 @@ class SimulatedSource(DataSource):
         return out, eeg_ts
 
     def _inject_blinks(self, eeg: np.ndarray, t: np.ndarray) -> None:
-        """Add slow, large positive deflections on the frontal channels."""
-        t0, t1 = t[0], t[-1]
-        fs = config.EEG_SAMPLE_RATE
-        while self._next_blink <= t1:
-            if self._next_blink >= t0:
-                peak_i = int((self._next_blink - t0) * fs)
-                width = int(0.20 * fs)  # ~200 ms
-                lo = max(0, peak_i - width)
-                hi = min(len(t), peak_i + width)
-                k = np.arange(lo, hi) - peak_i
-                shape = np.exp(-(k ** 2) / (2 * (width / 3) ** 2))
-                amp = self.rng.uniform(110, 190)
-                for ch in config.FRONTAL_CHANNELS:
-                    ci = config.EEG_CHANNELS.index(ch)
-                    eeg[lo:hi, ci] += amp * shape
-                # Temporal channels see a smaller echo.
-                for ch in config.TEMPORAL_CHANNELS:
-                    ci = config.EEG_CHANNELS.index(ch)
-                    eeg[lo:hi, ci] += 0.2 * amp * shape
-            self._next_blink += self.rng.exponential(3.0)
+        """Render smooth frontal blink deflections without chunk-edge truncation."""
+        t0, t1 = float(t[0]), float(t[-1])
+        while self._next_blink <= t1 + 0.5:
+            amp = float(self.rng.uniform(220.0, 320.0))
+            sigma_s = float(self.rng.uniform(0.065, 0.085))
+            self._blink_events.append((self._next_blink, amp, sigma_s))
+            self._next_blink += float(self.rng.exponential(3.5))
+        self._blink_events = [b for b in self._blink_events if b[0] >= t0 - 0.5]
+
+        frontal_idx = [config.EEG_CHANNELS.index(ch) for ch in config.FRONTAL_CHANNELS]
+        temporal_idx = [config.EEG_CHANNELS.index(ch) for ch in config.TEMPORAL_CHANNELS]
+        for peak_t, amp, sigma_s in self._blink_events:
+            if t0 - 0.5 <= peak_t <= t1 + 0.5:
+                dt = t - peak_t
+                shape = np.exp(-(dt ** 2) / (2 * sigma_s ** 2))
+                for ci in frontal_idx:
+                    eeg[:, ci] += amp * shape
+                for ci in temporal_idx:
+                    eeg[:, ci] += 0.2 * amp * shape
 
     def _inject_jaw(self, eeg: np.ndarray, t: np.ndarray) -> None:
         """Add high-frequency EMG bursts, strongest on temporal channels."""
-        t0, t1 = t[0], t[-1]
-        # Possibly start a new clench.
+        t0, t1 = float(t[0]), float(t[-1])
         while self._next_jaw <= t1:
             if self._next_jaw >= t0:
-                self._jaw_active_until = self._next_jaw + self.rng.uniform(0.4, 0.9)
-            self._next_jaw += 6.0 + self.rng.exponential(15.0)
-        # Fill any samples that fall inside an active clench with EMG noise.
+                self._jaw_active_until = self._next_jaw + float(self.rng.uniform(0.45, 0.9))
+            self._next_jaw += 5.0 + float(self.rng.exponential(12.0))
         if self._jaw_active_until > t0:
             mask = t <= self._jaw_active_until
             n_active = int(mask.sum())
             if n_active:
-                for ch in config.EEG_CHANNELS:
-                    ci = config.EEG_CHANNELS.index(ch)
-                    scale = 40.0 if ch in config.TEMPORAL_CHANNELS else 22.0
+                for ci, ch in enumerate(config.EEG_CHANNELS):
+                    # Broadband scale chosen so 20-44 Hz RMS reliably clears JAW_THRESHOLD_UV (28 uV).
+                    scale = 95.0 if ch in config.TEMPORAL_CHANNELS else 45.0
                     emg = self.rng.standard_normal(n_active) * scale
                     eeg[mask, ci] += emg
 
@@ -173,15 +191,14 @@ class SimulatedSource(DataSource):
         # Make sure the beat schedule extends a bit past the current chunk.
         base_ibi = 60.0 / 68.0  # ~68 bpm
         while self._last_beat <= t1 + 1.0:
-            # Beat-to-beat variability -> genuine HRV to measure.
-            self._last_beat += base_ibi + self.rng.normal(0, 0.04)
+            # Beat-to-beat variability (~35 ms resting RMSSD).
+            self._last_beat += base_ibi + float(self.rng.normal(0, 0.025))
             self._beat_times.append(self._last_beat)
         # Drop beats that can no longer affect any future chunk.
         self._beat_times = [b for b in self._beat_times if b >= t0 - 1.0]
 
-        # Render every beat whose pulse overlaps this chunk. A broad systolic
-        # upstroke plus a small, well-separated dicrotic bump; widths are kept
-        # realistic for 64 Hz so peak detection locks onto one peak per beat.
+        # Render every beat whose pulse overlaps this chunk: systolic upstroke +
+        # smaller dicrotic notch.
         for beat_t in self._beat_times:
             if t0 - 0.5 <= beat_t <= t1 + 0.5:
                 dt = t - beat_t
@@ -201,7 +218,7 @@ class SimulatedSource(DataSource):
         # Occasional posture change: shift the tilt vector.
         while self._next_posture <= t[-1]:
             self._tilt = self.rng.uniform(-0.15, 0.15, size=3)
-            self._next_posture += self.rng.exponential(8.0)
+            self._next_posture += float(self.rng.exponential(8.0))
         acc = np.zeros((n, 3))
         acc[:, 2] = 1.0  # gravity on Z (head upright)
         acc += self._tilt[None, :]

@@ -14,7 +14,7 @@ import numpy as np
 from .. import config
 from ..sources.base import SampleBatch
 from . import artifacts, bandpower, heart, indices, motion
-from .filters import clean_eeg
+from .filters import clean_eeg, clean_eeg_stream
 
 
 class _Ring:
@@ -44,7 +44,9 @@ class Pipeline:
         self.acc = _Ring(int(config.IMU_SAMPLE_RATE * 3), width=3)      # ~3 s
         self.gyro = _Ring(int(config.IMU_SAMPLE_RATE * 3), width=3)
 
-        # Buffer of newly-cleaned EEG samples to ship to the browser each frame.
+        # Stateful causal filter state and buffer of newly cleaned EEG samples
+        # to ship to the browser each frame without chunk-edge transients.
+        self._stream_zi: np.ndarray | None = None
         self._pending_display: list[np.ndarray] = []
 
         # Artifact edge-detection state.
@@ -59,13 +61,8 @@ class Pipeline:
     def add(self, batch: SampleBatch) -> None:
         if batch.eeg.size:
             self.eeg.push(batch.eeg)
-            # Clean the *newly appended* portion for display. We filter over a
-            # short context window to avoid edge transients, then keep only the
-            # new tail.
-            n_new = batch.eeg.shape[0]
-            ctx = self.eeg.data[-min(self.eeg.data.shape[0], config.WINDOW_SAMPLES):]
-            cleaned = clean_eeg(ctx)
-            self._pending_display.append(cleaned[-n_new:])
+            cleaned, self._stream_zi = clean_eeg_stream(batch.eeg, self._stream_zi)
+            self._pending_display.append(cleaned)
         if batch.ppg.size:
             self.ppg.push(batch.ppg)
         if batch.acc.size:
@@ -109,8 +106,9 @@ class Pipeline:
         }
 
     # -- frame -------------------------------------------------------------
-    def frame(self) -> dict:
-        now = time.time()
+    def frame(self, now: float | None = None) -> dict:
+        if now is None:
+            now = time.time()
 
         # Collect and clear the pending raw-display samples.
         if self._pending_display:
@@ -140,7 +138,9 @@ class Pipeline:
                      for b in config.BANDS}
 
         idx = indices.compute_indices(bands)
-        art = self._update_artifacts(now, win_clean if win_clean.shape[0] else win)
+        # Pass the raw window so artifact detectors apply their exact passbands
+        # once (0.5-6 Hz for blinks, 20-44 Hz for jaw EMG) without double-filtering.
+        art = self._update_artifacts(now, win)
         hr = heart.heart_metrics(self.ppg.data)
         mot = motion.motion_metrics(self.acc.data, self.gyro.data)
 

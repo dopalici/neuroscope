@@ -63,7 +63,7 @@ export const SECTION_DOSSIERS: Record<SectionId, SectionDossier> = {
   artifacts: {
     measure: 'Blink amplitude and jaw EMG burst amplitude',
     formula:
-      'low-frequency deflection on AF7/AF8 (blink) and high-frequency power on TP9/TP10 (jaw), against fixed µV thresholds',
+      '0.5–6 Hz peak amplitude on AF7/AF8 (blink) and 20–44 Hz RMS amplitude on TP9/TP10 (jaw), against fixed µV thresholds',
     background: [
       'The eye is a standing electrical dipole: the cornea sits positive relative to the retina. Rotating that dipole, or sweeping the eyelid across it, shifts the potential field across the whole front of the head. A blink therefore produces a large, slow deflection at frontal electrodes — hundreds of microvolts, one to two orders of magnitude bigger than any cortical rhythm. AF7 and AF8 sit directly above the eyes, so Muse sees this extremely clearly.',
       'Muscle is different. A clenched jaw recruits motor units in the masseter and temporalis, each firing action potentials that summate into broadband electromyographic noise stretching from about 20 Hz well past 200 Hz. TP9 and TP10 sit behind the ears, right over that muscle. Because this EMG overlaps the beta and gamma bands, an unnoticed clench can masquerade as “high beta” or “gamma activity” anywhere else in the dashboard.',
@@ -75,7 +75,7 @@ export const SECTION_DOSSIERS: Record<SectionId, SectionDossier> = {
   heart: {
     measure: 'PPG-derived heart rate and short-window HRV, read alongside head motion',
     formula:
-      'bpm from optical pulse peaks; RMSSD across recent beat intervals; motion = standard deviation of acceleration in milli-g',
+      'bpm from 0.5–4.0 Hz bandpassed optical pulse peaks; RMSSD across consecutive valid beat intervals; motion = σ(||acc||) in milli-g',
     background: [
       'Photoplethysmography shines light into the skin and measures how much comes back. Each heartbeat pushes a pressure wave through the arterioles, blood volume in the illuminated tissue rises, absorption rises, and reflected light dips. Counting those dips gives heart rate. The sinoatrial node sets the underlying pace, but its rate is continuously pushed around by the autonomic nervous system — sympathetic drive accelerating it, vagal (parasympathetic) drive slowing it.',
       'The variability between consecutive beats is dominated by that vagal traffic, largely through respiratory sinus arrhythmia: heart rate rises slightly on inhalation and falls on exhalation as vagal outflow is gated by breathing. RMSSD captures exactly this beat-to-beat jitter, which is why it is read as an index of parasympathetic tone rather than of fitness. Motion matters here because it corrupts both signals at once — it shifts the optical sensor against the skin and drags the EEG electrodes.',
@@ -92,7 +92,7 @@ export const SECTION_DOSSIERS: Record<SectionId, SectionDossier> = {
       'What you are practising is releasing the gating described in section 03 — letting cortex idle rather than driving it. Effortfully trying to raise the bloom usually backfires: striving recruits cortex, desynchronises alpha and shrinks the signal you are chasing. Genuine protocols add an individual baseline, a fixed reward threshold, artifact rejection, and many sessions before any claim is made.',
     ],
     caveat:
-      'This is a teaching toy with no baseline, no reward schedule and no artifact rejection. It demonstrates the loop; it is not therapy and should not be read as training any clinical outcome.',
+      'This is an educational demonstration loop with no individualized baseline, no reward schedule, and no automated artifact rejection. It illustrates the closed-loop principle; it is not therapy and should not be read as training any clinical outcome.',
   },
 }
 

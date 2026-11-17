@@ -28,8 +28,8 @@ def blink_magnitude(eeg_window: np.ndarray) -> float:
         return 0.0
     idx = [config.EEG_CHANNELS.index(c) for c in config.FRONTAL_CHANNELS]
     frontal = eeg_window[:, idx]
-    # 1-6 Hz isolates the slow blink shape from ongoing rhythms.
-    slow = bandpass(frontal, 1.0, 6.0)
+    # 0.5-6 Hz preserves the slow EOG blink waveform while rejecting DC drift and fast rhythms.
+    slow = bandpass(frontal, 0.5, 6.0)
     return float(np.max(np.abs(slow[-_RECENT_N:])))
 
 

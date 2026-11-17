@@ -46,6 +46,7 @@ function useCanvasDraw(
   const drawRef = useRef(draw)
   const visibleRef = useRef(true)
   const staleRef = useRef(false)
+  const renderRef = useRef<() => void>(() => {})
   drawRef.current = draw
 
   useEffect(() => {
@@ -61,6 +62,7 @@ function useCanvasDraw(
       const surface = prepare(canvas, height)
       if (surface) drawRef.current(surface.ctx, surface.width, surface.height)
     }
+    renderRef.current = render
 
     const visibility = new IntersectionObserver(
       ([entry]) => {
@@ -81,8 +83,12 @@ function useCanvasDraw(
       visibility.disconnect()
       resize.disconnect()
     }
+  }, [height])
+
+  useEffect(() => {
+    renderRef.current()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [height, ...deps])
+  }, deps)
 
   return canvasRef
 }

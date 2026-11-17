@@ -54,9 +54,11 @@ def frontal_alpha_asymmetry(bands_by_ch: dict[str, dict[str, float]]) -> float:
     """FAA = ln(alpha_right AF8) - ln(alpha_left AF7).
 
     In the research literature, relatively LESS left-frontal alpha (more left
-    activity) is associated with approach/positive affect. On a 4-electrode
-    consumer headband this is very noisy - treat it as a fun trend only.
-    Positive = more right-alpha (less right activity); negative = the reverse.
+    cortical activation) is associated with approach motivation. On a
+    4-electrode dry headband sharing an Fpz reference, this measure has low
+    signal-to-noise ratio and should be treated as an exploratory within-session
+    heuristic only. Positive = more right-alpha (less right activation);
+    negative = the reverse.
     """
     left = bands_by_ch.get("AF7", {}).get("alpha", 0.0)
     right = bands_by_ch.get("AF8", {}).get("alpha", 0.0)

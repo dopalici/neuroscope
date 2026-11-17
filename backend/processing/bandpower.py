@@ -3,22 +3,21 @@ from __future__ import annotations
 
 import numpy as np
 from scipy.signal import welch
-from scipy.integrate import simpson
 
 from .. import config
 
 
 def band_powers(window: np.ndarray, fs: float = config.EEG_SAMPLE_RATE) -> dict[str, float]:
-    """Absolute power in each frequency band for a single-channel window.
+    """Absolute power (uV^2) in each frequency band for a single-channel window.
 
-    Uses Welch's method (averaged periodograms) which trades a little frequency
-    resolution for a much lower-variance, more stable estimate - exactly what
-    you want for a live meter that must not jump around.
+    Uses Welch's method (averaged Hann-windowed periodograms) and trapezoidal
+    integration across contiguous band edges so shared boundary bins split
+    evenly and summed band powers match the total 1-44 Hz integrated PSD.
     """
     n = len(window)
     if n < 32:
         return {b: 0.0 for b in config.BANDS}
-    # nperseg ~1 s gives ~1 Hz resolution and a couple of averages per 2 s win.
+    # nperseg ~1 s gives ~1 Hz resolution and 3 overlapping averages per 2 s win.
     nperseg = min(n, int(fs))
     freqs, psd = welch(window, fs=fs, nperseg=nperseg, noverlap=nperseg // 2,
                        detrend="constant")
@@ -26,7 +25,7 @@ def band_powers(window: np.ndarray, fs: float = config.EEG_SAMPLE_RATE) -> dict[
     for band, (lo, hi) in config.BANDS.items():
         mask = (freqs >= lo) & (freqs <= hi)
         if mask.sum() >= 2:
-            out[band] = float(simpson(psd[mask], x=freqs[mask]))
+            out[band] = float(np.trapezoid(psd[mask], x=freqs[mask]))
         elif mask.any():
             out[band] = float(psd[mask].mean())
         else:
